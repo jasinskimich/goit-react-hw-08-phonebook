@@ -1,52 +1,118 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { addContact } from '../../redux/contactSlice';
-import styles from './contactForm.module.css';
+import { addContact, fetchContacts } from 'redux/features/contacts/contactsSlice';
+import { TextField, Button, Box, Container, FormControl, Collapse } from '@mui/material';
 
 function ContactForm() {
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [number, setNumber] = useState('');
+  const [nameError, setNameError] = useState(false);
+  const [numberError, setNumberError] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const dispatch = useDispatch();
+  const nameInputRef = useRef();
 
-  const handleSubmit = e => {
+  useEffect(() => {
+    if (showForm) {
+      nameInputRef.current.focus();
+    }
+  }, [showForm]);
+
+  const validateName = name => {
+    const namePattern = /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/;
+    return namePattern.test(name);
+  };
+
+  const validateNumber = number => {
+    const numberPattern =
+      /\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/;
+    return numberPattern.test(number);
+  };
+
+  const handleSubmit = async e => {
     e.preventDefault();
-    dispatch(addContact({ name, phone }));
-    setName('');
-    setPhone('');
+    if (validateName(name) && validateNumber(number)) {
+      try {
+        await dispatch(addContact({ name, number }));
+        dispatch(fetchContacts());
+      } catch (error) {
+        console.error('Error adding contact:', error);
+      }
+      setName('');
+      setNumber('');
+      setShowForm(false);
+    }
   };
 
   return (
-    <form className={styles['contact-form']} onSubmit={handleSubmit}>
-      <label className={styles['contact-label']}>
-        <input
-          className={styles['phonebook-input']}
-          type="text"
-          placeholder="Name"
-          name="name"
-          title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-          pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-          required
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-      </label>
-      <label className={styles['contact-label']}>
-        <input
-          className={styles['phonebook-input']}
-          type="tel"
-          placeholder="Number"
-          name="number"
-          title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
-          pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
-          required
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-        />
-      </label>
-      <button className={styles['add-contact-button']} type="submit">
-        Create New Contact
-      </button>
-    </form>
+    <Container maxWidth="sm">
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => setShowForm(!showForm)}
+        sx={{ mt: 2 }}
+        fullWidth
+      >
+        {showForm ? 'Hide Form' : 'New Contact'}
+      </Button>
+      <Collapse in={showForm} timeout={300}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+          <FormControl fullWidth>
+            <TextField
+              label="Name"
+              variant="outlined"
+              type="text"
+              placeholder="Name"
+              name="name"
+              required
+              value={name}
+              inputRef={nameInputRef}
+              onChange={e => {
+                setName(e.target.value);
+                setNameError(!validateName(e.target.value));
+              }}
+              margin="normal"
+              error={nameError}
+              helperText={
+                nameError ? 'Name may contain only letters, apostrophe, dash and spaces.' : ''
+              }
+            />
+          </FormControl>
+          <FormControl fullWidth>
+            <TextField
+              label="Number"
+              variant="outlined"
+              type="tel"
+              placeholder="Number"
+              name="number"
+              required
+              value={number}
+              onChange={e => {
+                setNumber(e.target.value);
+                setNumberError(!validateNumber(e.target.value));
+              }}
+              margin="normal"
+              error={numberError}
+              helperText={
+                numberError
+                  ? 'Phone number must be digits and can contain spaces, dashes, parentheses and can start with +'
+                  : ''
+              }
+            />
+          </FormControl>
+          <Button
+            variant="contained"
+            color="primary"
+            type="submit"
+            sx={{ mt: 2 }}
+            fullWidth
+            disabled={nameError || numberError}
+          >
+            Add Contact
+          </Button>
+        </Box>
+      </Collapse>
+    </Container>
   );
 }
 

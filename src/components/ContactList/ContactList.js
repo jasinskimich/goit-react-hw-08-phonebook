@@ -1,13 +1,12 @@
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { fetchContacts } from 'redux/features/contacts/contactsSlice';
 import ContactListItem from '../ContactListItem/ContactListItem';
-import { useEffect } from 'react';
-import { fetchContacts } from '../../redux/contactSlice';
-import styles from './contactList.module.css';
+import { List, Box, Container, Typography } from '@mui/material';
 
 function ContactList() {
   const contacts = useSelector(state => state.contacts.contacts);
   const searchTerm = useSelector(state => state.contacts.searchTerm);
-  const status = useSelector(state => state.contacts.status);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -19,17 +18,19 @@ function ContactList() {
     contacts.filter(contact => contact.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className={styles.container}>
-      {status === 'loading' ? (
-        <div className={styles.spinner}></div>
-      ) : (
-        <ul className={styles.list}>
-          {filteredContacts.map(contact => (
-            <ContactListItem key={contact.id} contact={contact} />
-          ))}
-        </ul>
-      )}
-    </div>
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 3 }}>
+        <List>
+          {filteredContacts.length === 0 ? (
+            <Typography variant="body1" align="center">
+              No contacts found.
+            </Typography>
+          ) : (
+            filteredContacts.map(contact => <ContactListItem key={contact.id} contact={contact} />)
+          )}
+        </List>
+      </Box>
+    </Container>
   );
 }
 

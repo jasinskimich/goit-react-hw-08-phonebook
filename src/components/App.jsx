@@ -1,22 +1,74 @@
-import ContactForm from './ContactForm/ContactForm';
-import ContactList from './ContactList/ContactList';
-import { Filter } from './Filter/Filter';
-import styles from './app.module.css';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { Route, Routes, Navigate, Outlet } from 'react-router-dom';
+import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import Header from './Header/Header';
+import Notification from './Notification/Notification';
+import Auth from './Auth/Auth';
+import LoadingSpinner from './LoadingSpinner/LoadingSpinner';
+import eventEmitter from 'eventEmiter';
+import { useDispatch } from 'react-redux';
+import { logoutUser } from 'redux/features/auth/authSlice';
+
+const Register = lazy(() => import('./Register/Register'));
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#668922',
+    },
+    secondary: {
+      main: '#f48fb1',
+    },
+    background: {
+      default: '#303030',
+      paper: '#000000',
+    },
+  },
+});
 
 function App() {
-  return (
-    <div className={styles.container}>
-      <div className={styles.phonebook}>
-        <h1>Phonebook</h1>
-        <ContactForm />
-      </div>
+  const dispatch = useDispatch();
 
-      <div className={styles.contacts}>
-        <h2>Contacts</h2>
-        <Filter />
-        <ContactList />
+  useEffect(() => {
+    const onLogout = () => {
+      dispatch(logoutUser());
+    };
+
+    eventEmitter.on('logout', onLogout);
+
+    return () => {
+      eventEmitter.off('logout', onLogout);
+    };
+  }, [dispatch]);
+
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <div>
+        <Header />
+        <Routes>
+          <Route
+            path="/*"
+            element={
+              <Auth>
+                <Outlet />
+              </Auth>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <Register />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+        <Notification />
       </div>
-    </div>
+    </ThemeProvider>
   );
 }
 
